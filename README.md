@@ -101,16 +101,97 @@ Where:
 ```python
 
 
+import gymnasium as gym
+import numpy as np
+
+# Create FrozenLake environment
+env = gym.make("FrozenLake-v1", map_name="4x4", is_slippery=True)
+
+# Access the unwrapped environment to use the transition model
+env = env.unwrapped
+
+# Number of states and actions
+n_states = env.observation_space.n
+n_actions = env.action_space.n
+
+# Parameters
+gamma = 0.99
+theta = 1e-8
+
+# Random policy: each action has equal probability
+policy = np.ones((n_states, n_actions)) / n_actions
+
+
+# Initialize value function
+V = np.zeros(n_states)
+
 # -------------------------------------------------
 # Policy Evaluation Function
 # -------------------------------------------------
 
+def policy_evaluation(env, policy, gamma=0.99, theta=1e-8):
+    """
+    Performs iterative policy evaluation using the Bellman expectation equation.
 
-# -------------------------------------------------
-# Display Output
-# -------------------------------------------------
+    Parameters:
+        env    : Gymnasium FrozenLake environment
+        policy : Fixed policy to be evaluated
+        gamma  : Discount factor
+        theta  : Convergence threshold
 
-# Change the parameters and observe the results
+    Returns:
+        V         : Estimated state-value function
+        iteration : Number of iterations used for convergence
+    """
+
+    V = np.zeros(env.observation_space.n)
+    iteration = 0
+
+    while True:
+        delta = 0
+        new_V = np.copy(V)
+
+        for state in range(env.observation_space.n):
+
+            value = 0
+
+            for action in range(env.action_space.n):
+
+                action_prob = policy[state][action]
+
+                for prob, next_state, reward, done in env.P[state][action]:
+
+                    value += action_prob * prob * (
+                        reward + gamma * V[next_state] * (not done)
+                    )
+
+            new_V[state] = value
+            delta = max(delta, abs(V[state] - new_V[state]))
+
+        V = new_V
+        iteration += 1
+
+        if delta < theta:
+            break
+
+    return V, iteration
+
+# Run policy evaluation
+V, iterations = policy_evaluation(env, policy, gamma, theta)
+
+print("Name: RENUSRI NARAHARASHETTY")
+print("Register Number: 212223240139")
+print("Number of iterations:", iterations)
+print("\nState-Value Function:")
+print(V)
+
+print("Name: RENUSRI NARAHARASHETTY")
+print("Register Number: 212223240139")
+print("\nState-Value Function as 4x4 Grid:")
+print(np.round(V.reshape(4, 4), 4))
+
+env.close()
+
 
 ```
 
@@ -118,15 +199,15 @@ Where:
 
 ## Output
 
-```text
+FOR GAMMA=0.99
 
-Number of Iterations: 
+<img width="748" height="366" alt="image" src="https://github.com/user-attachments/assets/8cd66f6a-f054-4663-9ea6-d0fe675b01f9" />
 
-State-Value Function as 4x4 Grid:
+FOR GAMMA=0.9
+
+<img width="767" height="372" alt="image" src="https://github.com/user-attachments/assets/1e35181f-b060-4a1b-82e5-e57cc321bffb" />
 
 
-
-```
 ---
 
 ## Result
@@ -139,8 +220,9 @@ Iterative policy evaluation was implemented successfully using the Gymnasium Fro
 
 ```text
 
-
-
+A higher gamma values future rewards more, causing values to propagate further and become larger;
+The zeros, is because those specific states are holes (traps) or
+starting positions from which the agent can never reach the goal under a random policy.
 ```
 
 
